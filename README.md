@@ -141,3 +141,14 @@ func CreateUser(ctx context.Context, client *ent.Client) (*ent.User, error) {
 2021/08/11 23:36:19 user was created:  User(id=1, age=30, name=a8m)
 user: User(id=1, age=30, name=a8m)%
 ```
+
+## Add Your First Edge (Relation)
+
+We want to declare an edge (relation) to another entity in the schema.
+Let's create two additional entities named `Car` and `Group` with a few fields. We use `ent` CLI to generate this initial schemas:
+
+```bash
+❯ go run entgo.io/ent/cmd/ent init Car Group
+```
+
+And then we add the rest of the fields manually:

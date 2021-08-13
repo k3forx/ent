@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/k3forx/ent/ent"
+	"github.com/k3forx/ent/ent/user"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -29,6 +30,12 @@ func main() {
 		log.Fatalf("failed to create user: %v", err)
 	}
 	fmt.Printf("user: %v", u)
+
+	u, err = CreateUser(ctx, client)
+	if err != nil {
+		log.Fatalf("failed to query user: %v", err)
+	}
+	fmt.Printf("user: %v", u)
 }
 
 func CreateUser(ctx context.Context, client *ent.Client) (*ent.User, error) {
@@ -37,5 +44,14 @@ func CreateUser(ctx context.Context, client *ent.Client) (*ent.User, error) {
 		return nil, fmt.Errorf("failed creating user: %w", err)
 	}
 	log.Println("user was created: ", u)
+	return u, nil
+}
+
+func QueryUser(ctx context.Context, client *ent.Client) (*ent.User, error) {
+	u, err := client.User.Query().Where(user.Name("a8m")).Only(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed querying user: %w", err)
+	}
+	log.Println("user returned: ", u)
 	return u, nil
 }
