@@ -1,6 +1,6 @@
 # ent
 
-## Setup A GoEh Environment
+## Setup A Go Environment
 
 ```bash
 ❯ go version
@@ -93,8 +93,9 @@ This produces the following files:
 
 To get started, create a new `ent.Client`. For this example, we will use MySQL.
 
-```bash
-❯ cat main.go
+- `main.go`
+
+```golang
 package main
 
 import (
@@ -123,7 +124,7 @@ func main() {
 
 Now, we're ready to create our user. Let's call this function `CreateUser` for the sake of example:
 
-```bash
+```golang
 func CreateUser(ctx context.Context, client *ent.Client) (*ent.User, error) {
         u, err := client.User.Create().SetAge(30).SetName("a8m").Save(ctx)
         if err != nil {
@@ -152,3 +153,34 @@ Let's create two additional entities named `Car` and `Group` with a few fields. 
 ```
 
 And then we add the rest of the fields manually:
+
+- `./ent/schema/car.go`
+
+```golang
+// Fields of the Car.
+func (Car) Fields() []ent.Field {
+	return []ent.Field{
+		field.String("model"),
+		field.Time("registered_at"),
+	}
+}
+```
+
+- `ent/schema/group.go`
+
+```golang
+// Fields of the Group.
+func (Group) Fields() []ent.Field {
+    return []ent.Field{
+        field.String("name").
+            // Regexp validation for group name.
+            Match(regexp.MustCompile("[a-zA-Z_]+$")),
+    }
+}
+```
+
+Let's define our first relation. An edge from `User` to `Car` defining that a user can **have 1 or more** cars, but a car **has only one** owner (one-to-many relation).
+
+Let's add the `"cars"` edge to the `User` schema, and run `go generation ./ent`:
+
+- `ent/schema/user.go`
