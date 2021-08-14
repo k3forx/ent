@@ -184,3 +184,129 @@ Let's define our first relation. An edge from `User` to `Car` defining that a us
 Let's add the `"cars"` edge to the `User` schema, and run `go generation ./ent`:
 
 - `ent/schema/user.go`
+
+```golang
+// Edges of the User.
+func (User) Edges() []ent.Edge {
+    return []ent.Edge{
+        edge.To("cars", Car.Type),
+    }
+}
+```
+
+We continue our example by creating 2 cars and adding them to a user.
+
+- `main.go`
+
+```golang
+func CreateCars(ctx context.Context, client *ent.Client) (*ent.User, error) {
+    // Create a new car with model "Tesla".
+    tesla, err := client.Car.
+        Create().
+        SetModel("Tesla").
+        SetRegisteredAt(time.Now()).
+        Save(ctx)
+    if err != nil {
+        return nil, fmt.Errorf("failed creating car: %w", err)
+    }
+    log.Println("car was created: ", tesla)
+
+    // Create a new car with model "Ford".
+    ford, err := client.Car.
+        Create().
+        SetModel("Ford").
+        SetRegisteredAt(time.Now()).
+        Save(ctx)
+    if err != nil {
+        return nil, fmt.Errorf("failed creating car: %w", err)
+    }
+    log.Println("car was created: ", ford)
+
+    // Create a new user, and add it the 2 cars.
+    a8m, err := client.User.
+        Create().
+        SetAge(30).
+        SetName("a8m").
+        AddCars(tesla, ford).
+        Save(ctx)
+    if err != nil {
+        return nil, fmt.Errorf("failed creating user: %w", err)
+    }
+    log.Println("user was created: ", a8m)
+    return a8m, nil
+}
+```
+
+But what about querying the `cars` edge (relation)? Here's how we do it:
+
+- `main.go`
+
+```golang
+func QueryCars(ctx context.Context, a8m *ent.User) error {
+    cars, err := a8m.QueryCars().All(ctx)
+    if err != nil {
+        return fmt.Errorf("failed querying user cars: %w", err)
+    }
+    log.Println("returned cars:", cars)
+
+    // What about filtering specific cars.
+    ford, err := a8m.QueryCars().
+        Where(car.Model("Ford")).
+        Only(ctx)
+    if err != nil {
+        return fmt.Errorf("failed querying user cars: %w", err)
+    }
+    log.Println(ford)
+    return nil
+}
+```
+
+## Add Your First Inverse Edge (BackRef)
+
+Assume we have a `Car` object and we want to get its owner; the user that this car belongs to. For this, we have another type of edge called "inverse edge" that is defined using the `edge.Form` function.
+
+![image](https://user-images.githubusercontent.com/45956169/129462281-fc3470ec-5594-450a-9e34-690da6d4e7c2.png)
+
+The new edge created in the diagram above is translucent, to emphasize that we don't create another edge in the database. It's just a back-reference to the real edge (relation).
+
+Let's add an inverse edge named `owner` to the `Car` schema, reference it to the `cars` edge in the `User` schema, and run `go generate ./ent`.
+
+- `ent/schema/car.go`
+
+```golang
+// Edges of the Car.
+func (Car) Edges() []ent.Edge {
+    return []ent.Edge{
+        // Create an inverse-edge called "owner" of type `User`
+        // and reference it to the "cars" edge (in User schema)
+        // explicitly using the `Ref` method.
+        edge.From("owner", User.Type).
+            Ref("cars").
+            // setting the edge to unique, ensure
+            // that a car can have only one owner.
+            Unique(),
+    }
+}
+```
+
+We'll continue the user/cars example above by querying the inverse edge.
+
+- `main.go`
+
+```golang
+func QueryCarUsers(ctx context.Context, a8m *ent.User) error {
+    cars, err := a8m.QueryCars().All(ctx)
+    if err != nil {
+        return fmt.Errorf("failed querying user cars: %w", err)
+    }
+    // Query the inverse edge.
+    for _, ca := range cars {
+        owner, err := ca.QueryOwner().Only(ctx)
+        if err != nil {
+            return fmt.Errorf("failed querying car %q owner: %w", ca.Model, err)
+        }
+        log.Printf("car %q owner: %q\n", ca.Model, owner.Name)
+    }
+    return nil
+}
+```

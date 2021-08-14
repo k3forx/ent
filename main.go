@@ -27,25 +27,30 @@ func main() {
 
 	ctx := context.Background()
 
-	u, err := CreateUser(ctx, client)
-	if err != nil {
-		log.Fatalf("failed to create user: %v", err)
-	}
-	fmt.Printf("user: %v", u)
+	// u, err := CreateUser(ctx, client)
+	// if err != nil {
+	// 	log.Fatalf("failed to create user: %v", err)
+	// }
+	// fmt.Printf("user: %v", u)
 
-	u, err = QueryUser(ctx, client)
+	u, err := QueryUser(ctx, client)
 	if err != nil {
 		log.Fatalf("failed to query user: %v", err)
 	}
 	log.Printf("user: %v", u)
 
-	u, err = CreateCars(ctx, client)
-	if err != nil {
-		log.Fatalf("failed to create cars: %v", err)
-	}
-	log.Printf("user: %v", u)
+	// u, err = CreateCars(ctx, client)
+	// if err != nil {
+	// 	log.Fatalf("failed to create cars: %v", err)
+	// }
+	// log.Printf("user: %v", u)
 
-	err = QueryCars(ctx, u)
+	// err = QueryCars(ctx, u)
+	// if err != nil {
+	// 	log.Fatalf("failed to query cars: %v", err)
+	// }
+
+	err = QueryCarUsers(ctx, u)
 	if err != nil {
 		log.Fatalf("failed to query cars: %v", err)
 	}
@@ -121,5 +126,21 @@ func QueryCars(ctx context.Context, a8m *ent.User) error {
 		return fmt.Errorf("failed querying user cars: %w", err)
 	}
 	log.Println(ford)
+	return nil
+}
+
+func QueryCarUsers(ctx context.Context, a8m *ent.User) error {
+	cars, err := a8m.QueryCars().All(ctx)
+	if err != nil {
+		return fmt.Errorf("failed querying user cars: %w", err)
+	}
+	// Query the inverse edge.
+	for _, ca := range cars {
+		owner, err := ca.QueryOwner().Only(ctx)
+		if err != nil {
+			return fmt.Errorf("failed querying car %q owner: %w", ca.Model, err)
+		}
+		log.Printf("car %q owner: %q\n", ca.Model, owner.Name)
+	}
 	return nil
 }
