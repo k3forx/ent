@@ -310,3 +310,44 @@ func QueryCarUsers(ctx context.Context, a8m *ent.User) error {
     return nil
 }
 ```
+
+## Create Your Seconde Edge
+
+We'll continue our example by creating a M2M (many-to-many) relationship between users and groups.
+
+![image](https://user-images.githubusercontent.com/45956169/129462599-ad45f954-3b47-4089-a02d-2afb6cbd2324.png)
+
+As you can see, each group entity can **have many** users, and a user can **be connected to many** groups; a simple "many-to-many" relationship. In the above illustration, the `Group` schema is the owner of the `users` edge (relation), and the `User` entity has a back-reference/inverse edge to this relationship named `groups`. Let's define this relationship in our schemas:
+
+- `ent/schema/group.go`
+
+```golang
+// Edges of the Group.
+func (Group) Edges() []ent.Edge {
+   return []ent.Edge{
+       edge.To("users", User.Type),
+   }
+}
+```
+
+- `ent/schema/user.go`
+
+```golang
+// Edges of the User.
+func (User) Edges() []ent.Edge {
+   return []ent.Edge{
+       edge.To("cars", Car.Type),
+       // Create an inverse-edge called "groups" of type `Group`
+       // and reference it to the "users" edge (in Group schema)
+       // explicitly using the `Ref` method.
+       edge.From("groups", Group.Type).
+           Ref("users"),
+   }
+}
+```
+
+We run `ent` on the schema directory to re-generate the assets.
+
+```bash
+❯ go generate ./ent
+```
